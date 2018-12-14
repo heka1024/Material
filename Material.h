@@ -13,7 +13,7 @@ class Force {
 
 struct Node {
     double x = 0;
-    double moment = 0, angle = 0;
+    double moment = 0, angle = 0, react = 0;
 };
 std::istream& operator>>(std::istream& is, Node& n);
 
@@ -39,6 +39,7 @@ std::istream& operator>>(std::istream& is, dForce& df);
 std::ostream& operator<<(std::ostream& os, dForce& df);
 
 struct Beam {
+    Node *from, *to;
     double E, I;
     double len;
 
@@ -50,17 +51,22 @@ struct Mesh {
     double sfd = 0, bmd = 0;
 
 };
-std::ostream& operator<<(std::ostream& os, dForce& df);
+std::ostream& operator<<(std::ostream& os, Mesh& m);
 
 class Structure {
 public:
+    ~Structure() {}
     void ls();
+    void moment3();
+    void calcGraph(std::vector<Mesh>& mesh);
     int nodeNum, beamNum, cfNum, dfNum, meshNum;
     double totalLen;
     std::vector<Node> node;
     std::vector<Beam> beam;
     std::vector<cForce> cf;
     std::vector<dForce> df;
+    std::vector<cForce> reaction;
+
 };
 std::istream& operator>>(std::istream& is, Structure& st);
 #endif

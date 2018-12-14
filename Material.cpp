@@ -114,8 +114,57 @@ std::istream& operator>>(std::istream& is, Structure& st) {
             st.df.push_back(dfForInput);
         }
     }
+    for (size_t i = 0; i < st.beamNum; i++) {
+        st.beam[i].from = &st.node[i];
+        st.beam[i].to = &st.node[i+1];
+    }
 
     return is;
+}
+
+void Structure::calcGraph(std::vector<Mesh>& mesh) {
+    std::cout << "calculating...!" << '\n';
+    double ITER = ((double) totalLen / meshNum);
+    double pos = 0;
+    for (size_t i = 0; i < meshNum; i++) {
+        Mesh tmpMesh;
+        for(auto x : this->cf) {
+            tmpMesh.sfd += x.shearForce(pos);
+        }
+        for(auto x : this->df) {
+            tmpMesh.sfd += x.shearForce(pos);
+        }
+        for(auto x : this->reaction) {
+            tmpMesh.sfd -= x.shearForce(pos);
+        }
+        for (auto x : mesh) {
+            tmpMesh.bmd += x.sfd * ITER;
+        }
+        tmpMesh.x = pos;
+        mesh.push_back(tmpMesh);
+        pos += ITER;
+    }
+    std::cout << mesh.size() << '\n';
+    std::cout << "calc end" << '\n';
+}
+
+void Structure::moment3() {
+    for(auto f : this->cf) {
+        for(auto beam : this->beam) {
+            if(f.x >= beam.from->x && f.x < beam.to->x) {
+                double a = f.x - beam.from->x, b = beam.to->x - f.x, l = a + b;
+                beam.from->react += (b / l) * f.q;
+                beam.to->react += (a / l) * f.q;
+                beam.from->angle += ((f.q * a * b) / (6 * beam.E * beam.I))
+                    * ((a + 2 * b) / l);
+                beam.to->angle -= ((f.q * a * b) / (6 * beam.E * beam.I))
+                    * ((2 * a + b) / l);
+            }
+        }
+    }
+    for(auto f : this->df) {
+        
+    }
 }
 
 void Structure::ls() {
@@ -134,7 +183,9 @@ void Structure::ls() {
 
     std::cout << "----- beams -----" << '\n';
     for(int i = 0; i < this->beamNum; i++) {
-        printf("%2d %9.3lf %9.3lf\n", i, this->beam[i].E, this->beam[i].I);
+        printf("%2d %9.3lf %9.3lf | ", i, this->beam[i].E, this->beam[i].I);
+        printf("from :: %2d %9.3lf | ", i, this->beam[i].from->x);
+        printf("to   :: %2d %9.3lf\n", i + 1, this->beam[i].to->x);
     }
 
     std::cout << "----- cForce -----" << '\n';
