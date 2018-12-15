@@ -4,7 +4,9 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include "iMath.h"
+#include <utility>
+#include "Matrix.h"
+#include "Vector.h"
 
 class Force {
     virtual double magnitude() {};
@@ -13,7 +15,7 @@ class Force {
 
 struct Node {
     double x = 0;
-    double moment = 0, angle = 0, react = 0;
+    double moment = 0, react = 0;
 };
 std::istream& operator>>(std::istream& is, Node& n);
 
@@ -31,6 +33,7 @@ std::ostream& operator<<(std::ostream& os, cForce& cf);
 class dForce : Force {
 public:
     double q1, q2, x1, x2;
+    double val(double x);
     double magnitude() override;
     double shearForce(double x) override;
 
@@ -42,14 +45,13 @@ struct Beam {
     Node *from, *to;
     double E, I;
     double len;
-
+    std::pair<double, double> angle{0.0, 0.0};
 };
 std::istream& operator>>(std::istream& is, Beam& b);
 
 struct Mesh {
     double x = 0;
     double sfd = 0, bmd = 0;
-
 };
 std::ostream& operator<<(std::ostream& os, Mesh& m);
 

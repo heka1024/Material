@@ -1,15 +1,18 @@
 #include <iostream>
+#include <cmath>
 #include <fstream>
 #include <vector>
 #include <string>
+#include <utility>
+#include <algorithm>
 #include "Material.h"
-#include "iMath.h"
+#include "Matrix.h"
+#include "Vector.h"
 
 std::istream& operator>>(std::istream& is, Node& n) {
     is >> n.x;
     return is;
 }
-
 
 std::istream& operator>>(std::istream& is, Beam& b) {
     is >> b.E >> b.I;
@@ -36,6 +39,10 @@ std::istream& operator>>(std::istream& is, cForce& cf) {
 
 std::ostream& operator<<(std::ostream& os, cForce& cf) {
     os << cf.q << ", " << cf.x;
+}
+
+double dForce::val(double x) {
+    return this->q1 + (this->q2 - this->q1) * ((x - this->x1) / (this->x2 - this->x1));
 }
 
 double dForce::magnitude() {
@@ -117,6 +124,7 @@ std::istream& operator>>(std::istream& is, Structure& st) {
     for (size_t i = 0; i < st.beamNum; i++) {
         st.beam[i].from = &st.node[i];
         st.beam[i].to = &st.node[i+1];
+        st.beam[i].len = st.node[i+1].x - st.node[i].x;
     }
 
     return is;
@@ -148,22 +156,137 @@ void Structure::calcGraph(std::vector<Mesh>& mesh) {
     std::cout << "calc end" << '\n';
 }
 
+template <typename T,typename U>
+std::pair<T,U> operator+(const std::pair<T,U> & l,const std::pair<T,U> & r) {
+    return {l.first + r.first, l.second + r.second};
+}
+
+template <typename T,typename U>
+std::pair<T,U> operator-(const std::pair<T,U> & l,const std::pair<T,U> & r) {
+    return {l.first - r.first, l.second - r.second};
+}
+
+std::pair<double, double> calcSquareAngle(Beam &beam, double q, double k1, double k2) {
+    double c = beam.to->x - k2, a = k1 - beam.from->x, b = k2 - k1;
+    double l = beam.to->x - beam.from->x, d = a + b;
+    std::pair<double, double> ans{0, 0};
+
+    double tmp = (double) (q * b) / (48 * beam.E * beam.I * l);
+    ans.first -= tmp * (b + 2 * c) * (
+        4 * std::pow(l, 2) - std::pow(b, 2) - std::pow(b + 2 * c, 2)
+    );
+    ans.second += tmp * (2 * d -b) * (
+        2 * b * (a + d) + 4 * c * (l + d)
+    );
+    return ans;
+}
+
+std::pair<double, double> calcTriAngle(Beam &beam, double q, double k1, double k2, bool leftHigher) {
+    double c = beam.to->x - k2, a = k1 - beam.from->x, b = k2 - k1;
+    double l = beam.to->x - beam.from->x, d = a + b;
+    double tmp = (q * b) / (12 * beam.E * beam.I * l);
+    std::pair<double, double> ans(0, 0);
+    if(leftHigher) {
+        ans = calcSquareAngle(beam, q, k1, k2);
+        ans = ans - calcTriAngle(beam, q, k1, k2, false);
+    } else { // right is higher
+        double e = l - a - ((double) 2 / 3) * b;
+        ans.first = tmp * (-1 * e * std::pow(l, 2) + std::pow(e, 3)
+            + (std::pow(b, 2) / 6) * (c + ((double) 17 / 45) * b)
+        );
+        ans.second = l * tmp * ( 2 * e * l + std::pow(e, 2) * ((e / l) - 3)
+            + (std::pow(b, 2) / (6 * l)) * (((double) 17 / 45) * b - d)
+        );
+    }
+    return ans;
+}
+
+void calcAngle(Beam& beam, dForce& df, double k1, double k2) {
+    double c = beam.to->x - k2, a = k1 - beam.from->x, b = k2 - k1;
+    double q1 = df.val(k1), q2 = df.val(k2);
+    std::pair<double, double> tmpAng{0, 0};
+    if(q1 == q2) {
+        tmpAng = calcSquareAngle(beam, q1, k1, k2);
+    } else {
+        if(q1 > q2) {
+            tmpAng = calcSquareAngle(beam, q2, k1, k2);
+            tmpAng = tmpAng + calcTriAngle(beam, q1 - q2, k1, k2, true);
+
+        } else {
+            tmpAng = calcSquareAngle(beam, q1, k1, k2);
+            tmpAng = tmpAng + calcTriAngle(beam, q2 - q1, k1, k2, false);
+        }
+    }
+    beam.angle = beam.angle + tmpAng;
+
+    double l = a + b + c;
+    double f = b * (q1 + q2) / 2;
+    double e = (b *(q1 + 2 * q2)) / (3 * (q1 + q2)) + a;
+    beam.from->react += (1 - e / l) * f;
+    beam.to->react += (e / l) * f;
+}
+
+void calcAngle(Beam& beam, cForce& f) {
+    double a = f.x - beam.from->x, b = beam.to->x - f.x, l = a + b;
+    beam.from->react += (b / l) * f.q;
+    beam.to->react += (a / l) * f.q;
+
+    double tmp = (f.q * a * b) / (6 * beam.E * beam.I * l);
+    std::pair<double, double> tmpAng(-1 * tmp * (a + 2 * b), tmp * (2 * a + b));
+    std::cout << "hello:: " << tmpAng.first << ", " << tmpAng.second << '\n';
+    beam.angle = beam.angle + tmpAng;
+}
+
 void Structure::moment3() {
     for(auto f : this->cf) {
-        for(auto beam : this->beam) {
+        for(auto& beam : this->beam) {
             if(f.x >= beam.from->x && f.x < beam.to->x) {
-                double a = f.x - beam.from->x, b = beam.to->x - f.x, l = a + b;
-                beam.from->react += (b / l) * f.q;
-                beam.to->react += (a / l) * f.q;
-                beam.from->angle += ((f.q * a * b) / (6 * beam.E * beam.I))
-                    * ((a + 2 * b) / l);
-                beam.to->angle -= ((f.q * a * b) / (6 * beam.E * beam.I))
-                    * ((2 * a + b) / l);
+                calcAngle(beam, f);
             }
         }
     }
     for(auto f : this->df) {
-        
+        for(auto& beam : this->beam) {
+            double k1 = std::max(beam.from->x, f.x1), k2 = std::min(beam.to->x, f.x2);
+            double b = k2 - k1;
+            if(b > 0) {
+                calcAngle(beam, f, k1, k2);
+            }
+        }
+    }
+    int n = nodeNum;
+
+    // Build M
+    Matrix M;
+    Vector e1(n); e1[0] = 1;
+    M.elem.push_back(e1);
+    for (int i = 0; i < beamNum - 1; i++) {
+        Vector tmp(n);
+        tmp[i] = beam[i].len / (beam[i].I * beam[i].E);
+        tmp[i+1] = 2 * (beam[i].len / (beam[i].I * beam[i].E) + beam[i+1].len / (beam[i+1].I * beam[i+1].E));
+        tmp[i+2] = beam[i+1].len / (beam[i+1].I * beam[i+1].E);
+        M.elem.push_back(tmp);
+    }
+    Vector en(n); en[n-1] = 1;
+    M.elem.push_back(en);
+    M.rows = n; M.cols = n;
+
+    // Build d
+    Vector d(n);
+    for (size_t i = 1; i < n - 1; i++) {
+        d[i] = 6 * (beam[i].angle.first - beam[i-1].angle.second);
+    }
+    std::cout << "----------- Matrix ---------" << '\n';
+    std::cout << M << '\n';
+    std::cout << "-------- angle vector -------" << '\n';
+    std::cout << d << '\n';
+    std::cout << "----------- moment ---------" << '\n';
+    Vector moment = M.solve(d);
+    std::cout << moment << '\n';
+
+    std::cout << "/* message */" << '\n';
+    for(auto x : this->node) {
+        std::cout << x.react << '\n';
     }
 }
 
@@ -183,7 +306,7 @@ void Structure::ls() {
 
     std::cout << "----- beams -----" << '\n';
     for(int i = 0; i < this->beamNum; i++) {
-        printf("%2d %9.3lf %9.3lf | ", i, this->beam[i].E, this->beam[i].I);
+        printf("%2d %9.3lf %9.3lf %9.3lf| ", i, this->beam[i].E, this->beam[i].I, this->beam[i].len);
         printf("from :: %2d %9.3lf | ", i, this->beam[i].from->x);
         printf("to   :: %2d %9.3lf\n", i + 1, this->beam[i].to->x);
     }
