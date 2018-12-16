@@ -21,6 +21,8 @@ std::istream& operator>>(std::istream& is, Node& n);
 
 class cForce : Force {
 public:
+    cForce() : q(0), x(0) {}
+    cForce(double q, double x) : q(q), x(x) {}
     double q, x;
     double magnitude() override;
     double shearForce(double x) override;

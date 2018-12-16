@@ -54,8 +54,7 @@ double dForce::shearForce(double x) {
     if(x < this->x1) {
         return 0;
     } else if (x < this->x2) {
-        double qx = (this->q1 + ((this->q2 - this->q1) * ((x - this->x1) / (this->x2 - this->x1))));
-        return (x - this->x1) * (this->q1 + qx) / 2;
+        return (x - this->x1) * (this->val(x) + q1) / 2;
     } else {
         return this->magnitude();
     }
@@ -82,7 +81,6 @@ std::istream& operator>>(std::istream& is, Structure& st) {
 
     int idx = 0;
     for(int i = 0; i < st.nodeNum; i++) {
-
         Node nodeForInput;
         is >> idx >> nodeForInput;
         if(idx != (i + 1)) {
@@ -136,6 +134,7 @@ void Structure::calcGraph(std::vector<Mesh>& mesh) {
     double pos = 0;
     for (size_t i = 0; i < meshNum; i++) {
         Mesh tmpMesh;
+        tmpMesh.x = pos;
         for(auto x : this->cf) {
             tmpMesh.sfd += x.shearForce(pos);
         }
@@ -143,16 +142,15 @@ void Structure::calcGraph(std::vector<Mesh>& mesh) {
             tmpMesh.sfd += x.shearForce(pos);
         }
         for(auto x : this->reaction) {
-            tmpMesh.sfd -= x.shearForce(pos);
+            tmpMesh.sfd += x.shearForce(pos);
         }
+        tmpMesh.sfd *= -1;
         for (auto x : mesh) {
             tmpMesh.bmd += x.sfd * ITER;
         }
-        tmpMesh.x = pos;
         mesh.push_back(tmpMesh);
         pos += ITER;
     }
-    std::cout << mesh.size() << '\n';
     std::cout << "calc end" << '\n';
 }
 
@@ -233,7 +231,6 @@ void calcAngle(Beam& beam, cForce& f) {
 
     double tmp = (f.q * a * b) / (6 * beam.E * beam.I * l);
     std::pair<double, double> tmpAng(-1 * tmp * (a + 2 * b), tmp * (2 * a + b));
-    std::cout << "hello:: " << tmpAng.first << ", " << tmpAng.second << '\n';
     beam.angle = beam.angle + tmpAng;
 }
 
@@ -284,9 +281,18 @@ void Structure::moment3() {
     Vector moment = M.solve(d);
     std::cout << moment << '\n';
 
-    std::cout << "/* message */" << '\n';
+    for (size_t i = 0; i < this->nodeNum; i++) {
+        node[i].moment += moment[i];
+    }
+
+    for(auto x : this->beam) {
+        x.from->react += (x.to->moment - x.from->moment) / x.len;
+        x.to->react -= (x.to->moment - x.from->moment) / x.len;
+    }
+
     for(auto x : this->node) {
-        std::cout << x.react << '\n';
+        cForce tmp(-1 * x.react, x.x);
+        this->reaction.push_back(tmp);
     }
 }
 
@@ -303,7 +309,6 @@ void Structure::ls() {
     for(int i = 0; i < this->nodeNum; i++) {
         printf("%2d %9.3lf\n", i, this->node[i].x);
     }
-
     std::cout << "----- beams -----" << '\n';
     for(int i = 0; i < this->beamNum; i++) {
         printf("%2d %9.3lf %9.3lf %9.3lf| ", i, this->beam[i].E, this->beam[i].I, this->beam[i].len);
@@ -319,5 +324,10 @@ void Structure::ls() {
     std::cout << "----- dForce -----" << '\n';
     for(int i = 0; i < this->dfNum; i++) {
         printf("%2d %9.3lf %9.3lf %9.3lf %9.3lf\n", i, this->df[i].q1, this->df[i].q2, this->df[i].x1, this->df[i].x2);
+    }
+
+    std::cout << "----- reaction -----" << '\n';
+    for (int i = 0; i < this->reaction.size(); i++) {
+        printf("%2d %9.3lf %9.3lf\n", i, this->reaction[i].q, this->reaction[i].x);
     }
 }
