@@ -8,16 +8,28 @@
 #include "Matrix.h"
 #include "Vector.h"
 
-class Force {
-    virtual double magnitude() {};
-    virtual double shearForce(double x) {};
-};
-
 struct Node {
     double x = 0;
     double moment = 0, react = 0;
 };
 std::istream& operator>>(std::istream& is, Node& n);
+
+class Force {
+    virtual double magnitude() {};
+    virtual double shearForce(double x) {};
+};
+
+class Moment {
+private:
+    double u(double x);
+public:
+    Moment() : m(0), x(0) {}
+    Moment(double m, double x) : m(m), x(x) {}
+    double magnitude();
+    double bodyMoment(double x);
+    double m, x;
+};
+std::istream& operator>>(std::istream& is, Moment& m);
 
 class cForce : Force {
 public:
@@ -63,12 +75,13 @@ public:
     void ls();
     void moment3();
     void calcGraph(std::vector<Mesh>& mesh);
-    int nodeNum, beamNum, cfNum, dfNum, meshNum;
+    int nodeNum, beamNum, cfNum, dfNum, mNum, meshNum;
     double totalLen;
     std::vector<Node> node;
     std::vector<Beam> beam;
     std::vector<cForce> cf;
     std::vector<dForce> df;
+    std::vector<Moment> moment;
     std::vector<cForce> reaction;
 
 };

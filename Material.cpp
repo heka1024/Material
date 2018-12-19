@@ -37,6 +37,25 @@ std::istream& operator>>(std::istream& is, cForce& cf) {
     return is;
 }
 
+double Moment::magnitude() {
+    return this->m;
+}
+
+double Moment::bodyMoment(double x) {
+    return this->u(x) * this->magnitude();
+}
+
+double Moment::u(double x) {
+    return (x >= this->x);
+}
+
+std::istream& operator>>(std::istream& is, Moment& m) {
+    is >> m.m;
+    is >> m.x;
+    return is;
+}
+
+
 std::ostream& operator<<(std::ostream& os, cForce& cf) {
     os << cf.q << ", " << cf.x;
 }
@@ -76,7 +95,7 @@ std::ostream& operator<<(std::ostream& os, Mesh& m) {
 }
 
 std::istream& operator>>(std::istream& is, Structure& st) {
-    is >> st.nodeNum >> st.cfNum >> st.dfNum >> st.totalLen >> st.meshNum;
+    is >> st.nodeNum >> st.cfNum >> st.dfNum >> st.mNum >> st.totalLen >> st.meshNum ;
     st.beamNum = st.nodeNum - 1;
 
     int idx = 0;
@@ -112,13 +131,29 @@ std::istream& operator>>(std::istream& is, Structure& st) {
     }
     for(int i = 0; i < st.dfNum; i++) {
         dForce dfForInput;
-        is >> idx >> dfForInput;if(idx != (i + 1)) {
+        is >> idx >> dfForInput;
+        if(idx != (i + 1)) {
             std::cout << "error!" << '\n';
             exit(1);
         } else {
             st.df.push_back(dfForInput);
         }
     }
+
+    
+    for(size_t i = 0; i < st.mNum; i++)
+    {
+        Moment momentForInput;
+        is >> idx >> momentForInput;
+        if(idx != (i + 1)) {
+            std::cout << "error!" << '\n';
+            exit(1);
+        } else {
+            st.moment.push_back(momentForInput);
+        }
+
+    }
+
     for (size_t i = 0; i < st.beamNum; i++) {
         st.beam[i].from = &st.node[i];
         st.beam[i].to = &st.node[i+1];
@@ -147,6 +182,9 @@ void Structure::calcGraph(std::vector<Mesh>& mesh) {
         tmpMesh.sfd *= -1;
         for (auto x : mesh) {
             tmpMesh.bmd += x.sfd * ITER;
+        }
+        for (auto x : this->moment) {
+            tmpMesh.bmd += x.bodyMoment(pos);
         }
         mesh.push_back(tmpMesh);
         pos += ITER;
@@ -224,6 +262,22 @@ void calcAngle(Beam& beam, dForce& df, double k1, double k2) {
     beam.to->react += (e / l) * f;
 }
 
+void calcAngle(Beam& beam, Moment& m) {
+    double a = m.x - beam.from->x, b = beam.to->x - m.x, l = a + b;
+    beam.from->react -= (m.m / beam.len);
+    beam.to->react += (m.m / beam.len);
+
+    double tmp = (m.m * a * b) / (6 * beam.E * beam.I * l);
+    std::pair<double, double> tmpAng(-1 * tmp * (a + 2 * b), tmp * (2 * a + b));
+    tmpAng.first = -1 * tmp * (
+        6 * a * l - 3 * std::pow(a, 2) - 2 * std::pow(l, 2)
+    );
+    tmpAng.second = tmp * (
+        3 * std::pow(a, 2) - std::pow(l, 2)
+    );
+    beam.angle = beam.angle + tmpAng;
+}
+
 void calcAngle(Beam& beam, cForce& f) {
     double a = f.x - beam.from->x, b = beam.to->x - f.x, l = a + b;
     beam.from->react += (b / l) * f.q;
@@ -251,6 +305,15 @@ void Structure::moment3() {
             }
         }
     }
+
+    for(auto m : this->moment) {
+        for(auto& beam : this->beam) {
+            if(m.x >= beam.from->x && m.x < beam.to->x) {
+                calcAngle(beam, m);
+            }
+        }
+    }
+
     int n = nodeNum;
 
     // Build M
@@ -324,6 +387,11 @@ void Structure::ls() {
     std::cout << "----- dForce -----" << '\n';
     for(int i = 0; i < this->dfNum; i++) {
         printf("%2d %9.3lf %9.3lf %9.3lf %9.3lf\n", i, this->df[i].q1, this->df[i].q2, this->df[i].x1, this->df[i].x2);
+    }
+
+    std::cout << "----- moment -----" << '\n';
+    for (int i = 0; i < this->mNum; i++) {
+        printf("%2d %9.3lf %9.3lf\n", i, this->moment[i].m, this->moment[i].x);
     }
 
     std::cout << "----- reaction -----" << '\n';
