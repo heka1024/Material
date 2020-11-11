@@ -2,9 +2,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "lib/Material.h"
-#include "lib/Matrix.h"
-#include "lib/Vector.h"
+#include "Material.h"
+#include "Matrix.h"
+#include "Vector.h"
 std::string inputName = "../input/input.txt";
 
 int main() {

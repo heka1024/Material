@@ -58,6 +58,7 @@ std::istream& operator>>(std::istream& is, Moment& m) {
 
 std::ostream& operator<<(std::ostream& os, cForce& cf) {
     os << cf.q << ", " << cf.x;
+    return os;
 }
 
 double dForce::val(double x) {
@@ -88,10 +89,12 @@ std::istream& operator>>(std::istream& is, dForce& df) {
 std::ostream& operator<<(std::ostream& os, dForce& df) {
     os << df.q1 << ", " << df.q2 << ", ";
     os << df.x1 << ", " << df.x2;
+    return os;
 }
 
 std::ostream& operator<<(std::ostream& os, Mesh& m) {
     os << m.x << ", " << m.sfd << ", " << m.bmd << '\n';
+    return os;
 }
 
 std::istream& operator>>(std::istream& is, Structure& st) {
@@ -329,7 +332,6 @@ void Structure::moment3() {
     }
     Vector en(n); en[n-1] = 1;
     M.elem.push_back(en);
-    M.rows = n; M.cols = n;
 
     // Build d
     Vector d(n);

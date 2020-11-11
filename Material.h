@@ -15,8 +15,8 @@ struct Node {
 std::istream& operator>>(std::istream& is, Node& n);
 
 class Force {
-    virtual double magnitude() {};
-    virtual double shearForce(double x) {};
+    virtual double magnitude() = 0;
+    virtual double shearForce(double x) = 0;
 };
 
 class Moment {
