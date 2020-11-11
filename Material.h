@@ -71,6 +71,10 @@ std::ostream& operator<<(std::ostream& os, Mesh& m);
 
 class Structure {
 public:
+    Structure() {}
+    Structure(int nodeNum, int beamNum, int cfNum, int dfNum, int mNum, int meshNum):
+        nodeNum(nodeNum), beamNum(beamNum), cfNum(cfNum), 
+        dfNum(dfNum), mNum(mNum), meshNum(meshNum) {}
     ~Structure() {}
     void ls();
     void moment3();

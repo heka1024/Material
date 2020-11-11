@@ -1,0 +1,44 @@
+{
+	"node_num": 3,
+	"cf_num": 1,
+	"df_num": 1,
+	"m_num": 1,
+	"total_length": 1,
+	"mesh_num": 1,
+	"beams": [
+		{
+			"index": 1,
+			"e": 10000,
+			"i": 1
+		},
+		{
+			"index": 2,
+			"e": 10000,
+			"i": 1
+		}
+	],
+	"cfs": [
+		{
+			"index": 1,
+			"magnitude": 50000,
+			"from": 4
+		}
+	],
+	"dfs": [
+		{
+			"index": 1,
+			"from_magnitude": 3000,
+			"to_magnitude": 3000,
+			"from": 8,
+			"to": 20
+		}
+	],
+	"moments": [
+		{
+			"index": 1,
+			"magnitude": 30002,
+			"from": 2
+		}
+	]
+}
+
