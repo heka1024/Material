@@ -11,6 +11,7 @@ int main() {
     Structure s;
     std::ifstream ifs(inputName);
     ifs >> s; ifs.close();
+    std::cout << "input succeess!\n";
     s.moment3();
     std::vector<Mesh> meshes;
     s.calcGraph(meshes);

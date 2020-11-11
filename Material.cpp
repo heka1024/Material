@@ -101,12 +101,13 @@ std::istream& operator>>(std::istream& is, Structure& st) {
     is >> st.nodeNum >> st.cfNum >> st.dfNum >> st.mNum >> st.totalLen >> st.meshNum ;
     st.beamNum = st.nodeNum - 1;
 
+
     int idx = 0;
     for(int i = 0; i < st.nodeNum; i++) {
         Node nodeForInput;
         is >> idx >> nodeForInput;
         if(idx != (i + 1)) {
-            std::cout << "error!" << '\n';
+            std::cout << "error! 1" << '\n';
             exit(1);
         } else {
             st.node.push_back(nodeForInput);
@@ -116,7 +117,7 @@ std::istream& operator>>(std::istream& is, Structure& st) {
         Beam beamForInput;
         is >> idx >> beamForInput;
         if(idx != (i + 1)) {
-            std::cout << "error!" << '\n';
+            std::cout << "error! 2" << '\n';
             exit(1);
         } else {
             st.beam.push_back(beamForInput);
@@ -126,7 +127,7 @@ std::istream& operator>>(std::istream& is, Structure& st) {
         cForce cfForInput;
         is >> idx >> cfForInput;
         if(idx != (i + 1)) {
-            std::cout << "error!" << '\n';
+            std::cout << "error! 3" << '\n';
             exit(1);
         } else {
             st.cf.push_back(cfForInput);
@@ -136,7 +137,7 @@ std::istream& operator>>(std::istream& is, Structure& st) {
         dForce dfForInput;
         is >> idx >> dfForInput;
         if(idx != (i + 1)) {
-            std::cout << "error!" << '\n';
+            std::cout << "error! 4" << '\n';
             exit(1);
         } else {
             st.df.push_back(dfForInput);
