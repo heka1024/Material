@@ -3,34 +3,80 @@
 #include <iostream>
 #include <vector>
 
+
 class Vector {
 public:
     std::vector<double> elem;
 
     // Constructors
     Vector() : elem(0) {};
-    Vector(std::initializer_list<double> l);
-    Vector(int len);
-    Vector(double *values, int len);
+    Vector(std::initializer_list<double> l) {
+        for (auto x : l) {
+            this->elem.push_back(x);
+        }
+    }
+    Vector(int len) {
+        this->elem.assign(len, 0);
+    }
 
     // Desctructor
-    ~Vector();
+    ~Vector() {}
 
-    size_t size();
-    const size_t size() const;
-    Vector* crossP(Vector x, Vector y);
-    Vector& operator+(const Vector &x);
-    Vector& operator-(const Vector &x);
-    Vector& operator^(const Vector &other);
-    double operator*(const Vector &other);
+    int size() { 
+        return this->elem.size();
+    }
 
-    Vector& operator*(const int& other);
-    double& operator[](int n);
-    const double& operator[](int n) const;
+
+    double& operator[](int n) {
+        return this->elem[n];
+    }
+
+    Vector& operator+(Vector &other) {
+        Vector *ans = new Vector;
+        double tmp = 0;
+        for (int i = 0; i < this->size(); i++) {
+            tmp = (*this)[i] + other[i];
+            ans->elem.push_back(tmp);
+        }
+        return *ans;
+    }
+    Vector& operator-(Vector &other) {
+        Vector *ans = new Vector;
+        double tmp = 0;
+        for (int i = 0; i < this->size(); i++) {
+            tmp = (*this)[i] - other[i];
+            ans->elem.push_back(tmp);
+        }
+        return *ans;
+    }
+    Vector& operator^(Vector &other) {
+        Vector *ans = new Vector;
+        ans->elem.push_back((*this)[1] * other[2] - (*this)[2] * other[1]);
+        ans->elem.push_back((*this)[2] * other[0] - (*this)[0] * other[2]);
+        ans->elem.push_back((*this)[0] * other[1] - (*this)[1] * other[0]);
+
+        return *ans;
+    }
+    
+    double operator*(Vector &other) {
+        double ans = 0;
+        for (int i = 0; i < this->size(); i++) {
+            ans += (*this)[i] * other[i];
+        }
+        return ans;
+    }
+
+    Vector& operator*(const double mult) {
+        Vector *ans = new Vector;
+
+        for(auto i : this->elem) {
+            ans->elem.push_back(mult * i);
+        }
+
+        return *ans;
+    }
 };
 
-Vector& operator*(const int& mult, Vector& other);
-Vector& operator*(const double& mult, Vector& other);
-std::ostream& operator<<(std::ostream& os, Vector& v);
-std::ostream& operator<<(std::ostream& os, const Vector& v) ;
+
+
 #endif

@@ -12,18 +12,13 @@ public:
     Matrix() : elem(0) {}
     Matrix(int rows, int cols);
     Matrix(std::initializer_list<Vector> l);
-    Matrix(const Matrix& origin);
+    Matrix(Matrix& origin);
     // Desctructor
     ~Matrix() {};
 
     // public methods
-    double rows() { return elem.size(); }
-    const double rows() const { return elem.size(); };
-    double cols() { return elem[0].size(); }
-    const double cols() const { return elem[0].size(); };
-    Matrix& pivoting(Matrix& P);
-    double determinant();
-    bool isSingular();
+    int rows() { return elem.size(); }
+    int cols() { return elem[0].size(); }
     Matrix& transpose();
     Matrix& inverse();
     Vector& solve(Vector& colVec);
@@ -31,12 +26,14 @@ public:
     Matrix& operator+(Matrix& other);
     Matrix& operator-(Matrix& other);
     Matrix& operator*(Matrix& other);
-    Vector& operator*(const Vector& rhs);
+    Matrix& operator*(double factor) {
+        Matrix *pnew = new Matrix();
+        for(auto x : this->elem) {
+            pnew->elem.push_back(x * factor);
+        }
+        return *pnew;
+    }
+    Vector& operator*(Vector& rhs);
     Vector& operator[](int n);
-    const Vector& operator[](int n) const;
 };
-Matrix& operator*(const int& factor, const Matrix& m);
-Matrix& operator*(const double& factor, const Matrix& m);
-std::ostream& operator<<(std::ostream& os, const Matrix& M);
-std::ostream& operator<<(std::ostream& os, Matrix& M);
 #endif

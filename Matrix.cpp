@@ -1,12 +1,11 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
-#include <algorithm>
 #include "Vector.h"
 #include "Matrix.h"
 
 Matrix::Matrix(int rows, int cols) {
-    for (size_t i = 0; i < rows; i++) {
+    for (int i = 0; i < rows; i++) {
         this->elem.push_back(Vector(cols));
     }
 }
@@ -26,25 +25,8 @@ Vector& Matrix::operator[](int n) {
     return this->elem[n];
 }
 
-const Vector& Matrix::operator[](const int n) const {
-    if (n >= this->rows() || n < 0) {
-        std::cout << "ERROR: Out of Bound\n";
-        exit(1);
-    }
 
-    return this->elem[n];
-}
-
-std::ostream& operator<<(std::ostream& os, Matrix& M) {
-    int i, j;
-    for(auto x : M.elem) {
-        os << x << '\n';
-    }
-    return os;
-}
-
-
-Matrix::Matrix(const Matrix& origin) {
+Matrix::Matrix( Matrix& origin) {
     for (int i = 0; i < origin.rows(); i++) {
         this->elem.push_back(origin[i]);
     }
@@ -57,7 +39,7 @@ Matrix& Matrix::operator+(Matrix& other) {
     }
 
     Matrix *pnew = new Matrix;
-    for (size_t i = 0; i < this->rows(); i++) {
+    for (int i = 0; i < this->rows(); i++) {
         Vector add = (*this)[i] + other[i];
         pnew->elem.push_back(add);
     }
@@ -72,7 +54,7 @@ Matrix& Matrix::operator-(Matrix& other) {
     }
 
     Matrix *pnew = new Matrix;
-    for (size_t i = 0; i < this->rows(); i++) {
+    for (int i = 0; i < this->rows(); i++) {
         Vector sub = (*this)[i] - other[i];
         pnew->elem.push_back(sub);
     }
@@ -80,12 +62,7 @@ Matrix& Matrix::operator-(Matrix& other) {
     return *pnew;
 }
 
-Vector& Matrix::operator*(const Vector& rhs) {
-    if(this->cols() != rhs.size()) {
-        std::cout << "ERROR: cols of matrix and size of vector does not match.\n";
-        exit(1);
-    }
-
+Vector& Matrix::operator*( Vector& rhs) {
     Vector *ans = new Vector;
 
     for(auto row : this->elem) {
@@ -144,12 +121,12 @@ Vector& Matrix::solve(Vector& colVec) {
         exit(1);
     }
 
-    size_t n = this->cols();
+    int n = this->cols();
     Matrix A = (*this);
     Vector b = colVec;
-    for (size_t k = 0; k < n; k++) {
-        size_t m = k;
-        for (size_t j = k + 1; j < n; j++) {
+    for (int k = 0; k < n; k++) {
+        int m = k;
+        for (int j = k + 1; j < n; j++) {
             if(std::abs(A[m][k]) < std::abs(A[j][k])) {
                 m = j;
             }
@@ -164,9 +141,9 @@ Vector& Matrix::solve(Vector& colVec) {
         if(A[n-1][n-1] == 0) {
             std::cout << "ERROR: No unique solutions" << '\n';
         } else {
-            for (size_t j = k + 1; j < n; j++) {
+            for (int j = k + 1; j < n; j++) {
                 double factor = A[j][k] / A[k][k];
-                A[j] = A[j] - factor * A[k];
+                A[j] = A[j] - A[k] * factor;
                 b[j] = b[j] - factor * b[k];
             }
         }
@@ -183,28 +160,12 @@ Vector& Matrix::solve(Vector& colVec) {
 
 Matrix& Matrix::inverse() {
     Matrix inv;
-    size_t n = this->cols();
-    for (size_t i = 0; i < n; i++) {
+    int n = this->cols();
+    for (int i = 0; i < n; i++) {
         Vector e(n); e[i] = 1;
         Vector tmp = this->solve(e);
         inv.elem.push_back(tmp);
     }
     Matrix *pnew = new Matrix(inv.transpose());
-    return *pnew;
-}
-
-Matrix& operator*(const int& factor, const Matrix& m) {
-    Matrix *pnew = new Matrix();
-    for(auto x : m.elem) {
-        pnew->elem.push_back(factor * x);
-    }
-    return *pnew;
-}
-
-Matrix& operator*(const double& factor, const Matrix& m) {
-    Matrix *pnew = new Matrix();
-    for(auto x : m.elem) {
-        pnew->elem.push_back(factor * x);
-    }
     return *pnew;
 }
