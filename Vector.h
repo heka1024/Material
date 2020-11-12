@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 
-
 class Vector {
 public:
     std::vector<double> elem;
@@ -76,7 +75,6 @@ public:
         return *ans;
     }
 };
-
 
 
 #endif

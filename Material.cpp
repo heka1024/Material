@@ -3,7 +3,7 @@
 #include <utility>
 #include <algorithm>
 #include "Material.h"
-#include "Matrix.h"
+#include "Matrix.hpp"
 #include "Vector.h"
 
 using namespace std;
