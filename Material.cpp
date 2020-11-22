@@ -271,7 +271,7 @@ void calcAngle(Beam& beam, Moment& m) {
     beam.from->react -= (m.m / beam.len);
     beam.to->react += (m.m / beam.len);
 
-    double tmp = (m.m * a * b) / (6 * beam.E * beam.I * l);
+    double tmp = (m.m) / (6 * beam.E * beam.I * l);
     std::pair<double, double> tmpAng(-1 * tmp * (a + 2 * b), tmp * (2 * a + b));
     tmpAng.first = -1 * tmp * (
         6 * a * l - 3 * std::pow(a, 2) - 2 * std::pow(l, 2)
