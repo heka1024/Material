@@ -53,7 +53,7 @@ SecretStorage==2.3.1
 simplejson==3.16.0
 six==1.14.0
 systemd-python==234
-thefuck==3.30
+thefuck==3.31
 ubuntu-advantage-tools==20.3
 ubuntu-drivers-common==0.0.0
 ufw==0.36
